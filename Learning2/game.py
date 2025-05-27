@@ -32,7 +32,7 @@ tile_size = 50
 game_over = 0
 main_menu = True
 level = 1
-max_levels = 7
+max_levels = 8
 score = 0
 
 
@@ -72,6 +72,7 @@ def reset_level(level):
 	coin_group.empty()
 	lava_group.empty()
 	exit_group.empty()
+	text_trigger_group.empty()
 
 	#load in level data and create world
 	if path.exists(f'level{level}_data'):
@@ -127,7 +128,7 @@ class Player():
 		if game_over == 0:
 			#get keypresses
 			key = pygame.key.get_pressed()
-			if key[pygame.K_SPACE] and self.jumped == False and self.in_air == False:
+			if key[pygame.K_UP] and self.jumped == False and self.in_air == False:
 				jump_fx.play()
 				self.vel_y = -15
 				self.jumped = True
@@ -265,6 +266,27 @@ class Player():
 
 
 
+# Create sprite groups
+blob_group = pygame.sprite.Group()
+platform_group = pygame.sprite.Group()
+lava_group = pygame.sprite.Group()
+coin_group = pygame.sprite.Group()
+exit_group = pygame.sprite.Group()
+text_trigger_group = pygame.sprite.Group()
+
+# Define trigger messages dictionary
+trigger_messages = {
+    (1, 1): "Welcome to the game!",
+    (5, 5): "Watch out for the lava!",
+    (10, 10):"Collect all coins to proceed!",
+	(15, 15):"These platforms move! Watch your step!",
+	(20, 20):"Watch out for the enemies!",
+	(25, 25):"They may look cute, but they're dangerous!",
+	(30, 30):"Make sure not to fall!",
+	(35, 35):"You got this!",
+    # Add more messages with (x, y) coordinates as keys
+}
+
 class World():
 	def __init__(self, data):
 		self.tile_list = []
@@ -309,6 +331,9 @@ class World():
 				if tile == 8:
 					exit = Exit(col_count * tile_size, row_count * tile_size - (tile_size // 2))
 					exit_group.add(exit)
+				if tile == 9:
+					trigger = TextTrigger(col_count * tile_size, row_count * tile_size)
+					text_trigger_group.add(trigger)
 				col_count += 1
 			row_count += 1
 
@@ -392,15 +417,98 @@ class Exit(pygame.sprite.Sprite):
 		self.rect.y = y
 
 
+class TextTrigger(pygame.sprite.Sprite):
+    # Messages organized by level
+    level_messages = {
+        1: [
+            "Welcome to the game!",
+            "Use arrow keys to move",
+            "Press UP to jump"
+        ],
+        2: [
+            "Watch out for the lava!",
+            "Try not to fall in"
+        ],
+        3: [
+            "Collect all coins to proceed!",
+            "Coins give you points",
+            "See how many you can get"
+        ],
+        4: [
+            "These platforms move!",
+            "Watch your step!",
+            "Time your jumps carefully"
+        ],
+        5: [
+            "Watch out for the enemies!",
+            "They may look cute",
+            "But they're dangerous!"
+        ],
+        6: [
+            "The exit is up ahead",
+            "Can you make it there?",
+            "Don't give up!"
+        ],
+        7: [
+            "You're almost there!",
+            "Just a bit further",
+            "You can do it!"
+        ],
+        8: [
+            "Final level!",
+            "This is the hardest one",
+            "Good luck!"
+        ]
+    }
+
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.rect = pygame.Rect(x, y, tile_size, tile_size)
+        # Store coordinates to preserve message assignment
+        self.grid_x = x // tile_size
+        self.grid_y = y // tile_size
+        # Get level-specific messages or default ones
+        current_level = level  # Using the global level variable
+        level_specific_messages = TextTrigger.level_messages.get(current_level, ["Be careful!", "Keep going!", "You got this!"])
+        # Assign message based on position in current level
+        message_index = len([t for t in text_trigger_group if t.grid_x <= self.grid_x and t.grid_y <= self.grid_y])
+        self.message = level_specific_messages[min(message_index, len(level_specific_messages) - 1)]
+        self.active = False
+        self.display_time = 0
+        self.display_duration = 1500  # Display text for 3 seconds
+
+    def update(self):
+        if self.active:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.display_time > self.display_duration:
+                self.active = False
+
+    def trigger(self):
+        if not self.active:
+            self.active = True
+            self.display_time = pygame.time.get_ticks()
+
+    def draw(self, screen):
+        if self.active:
+            # Calculate position based on grid coordinates
+            # Use grid positions to create a grid layout for messages
+            # This ensures messages are spaced out across the screen
+            grid_spacing_x = screen_width // 4  # Divide screen into 4 columns
+            grid_spacing_y = screen_height // 4  # Divide screen into 4 rows
+            
+            # Calculate position based on grid coordinates
+            x_pos = (self.grid_x % 4) * grid_spacing_x + grid_spacing_x // 2
+            y_pos = (self.grid_y % 4) * (grid_spacing_y // 2) + 50  # Start from top with some padding
+            
+            # Render the text
+            text_surf = font_score.render(self.message, True, white)
+            text_rect = text_surf.get_rect(center=(x_pos, y_pos))
+            screen.blit(text_surf, text_rect)
+
+
 world_data = []
 
 player = Player(100, screen_height - 130)
-
-blob_group = pygame.sprite.Group()
-platform_group = pygame.sprite.Group()
-lava_group = pygame.sprite.Group()
-coin_group = pygame.sprite.Group()
-exit_group = pygame.sprite.Group()
 
 #create dummy coin for showing the score
 score_coin = Coin(tile_size // 2, tile_size // 2)
@@ -417,7 +525,6 @@ world = World(world_data)
 restart_button = Button(screen_width // 2 - 50, screen_height // 2 + 100, restart_img)
 start_button = Button(screen_width // 2 - 350, screen_height // 2, start_img)
 exit_button = Button(screen_width // 2 + 150, screen_height // 2, exit_img)
-
 
 run = True
 while run:
@@ -450,6 +557,17 @@ while run:
 		lava_group.draw(screen)
 		coin_group.draw(screen)
 		exit_group.draw(screen)
+
+		# Update and draw text triggers
+		text_trigger_group.update()
+		# Check for collisions between player and triggers
+		triggers_hit = pygame.sprite.spritecollide(player, text_trigger_group, False)
+		for trigger in triggers_hit:
+			trigger.trigger()
+		
+		# Draw any active trigger messages
+		for trigger in text_trigger_group:
+			trigger.draw(screen)
 
 		game_over = player.update(game_over)
 
