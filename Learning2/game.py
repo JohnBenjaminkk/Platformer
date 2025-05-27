@@ -430,34 +430,33 @@ class TextTrigger(pygame.sprite.Sprite):
             "Try not to fall in"
         ],
         3: [
-            "Collect all coins to proceed!",
-            "Coins give you points",
-            "See how many you can get"
-        ],
-        4: [
             "These platforms move!",
             "Watch your step!",
             "Time your jumps carefully"
         ],
-        5: [
+        4: [
             "Watch out for the enemies!",
             "They may look cute",
             "But they're dangerous!"
         ],
-        6: [
+        5: [
             "The exit is up ahead",
             "Can you make it there?",
             "Don't give up!"
         ],
-        7: [
+        6: [
             "You're almost there!",
             "Just a bit further",
             "You can do it!"
         ],
+        7: [
+            "This is a tricky one!",
+			"Be careful!",
+			"Timing is key!"
+        ],
         8: [
             "Final level!",
             "This is the hardest one",
-            "Good luck!"
         ]
     }
 
