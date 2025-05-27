@@ -2,6 +2,7 @@ import pygame
 from pygame.locals import *
 from pygame import mixer
 import pickle
+import sys
 from os import path
 
 pygame.mixer.pre_init(44100, -16, 2, 512)
@@ -64,6 +65,22 @@ def draw_text(text, font, text_col, x, y):
 	screen.blit(img, (x, y))
 
 
+def load_level_data(level_number):
+    try:
+        bundle_dir = getattr(sys, '_MEIPASS', path.abspath(path.dirname(__file__)))
+        # First try the parent directory (where the level files are located)
+        level_path = path.abspath(path.join(bundle_dir, '..', f'level{level_number}_data'))
+        if not path.exists(level_path):
+            # If not found, try the bundle directory itself
+            level_path = path.join(bundle_dir, f'level{level_number}_data')
+        if path.exists(level_path):
+            with open(level_path, 'rb') as pickle_in:
+                return pickle.load(pickle_in)
+    except Exception as e:
+        print(f"Error loading level {level_number}: {e}")
+    return [[1] * 20 for _ in range(20)]  # Return a safe default level
+
+
 #function to reset level
 def reset_level(level):
 	player.reset(100, screen_height - 130)
@@ -74,11 +91,9 @@ def reset_level(level):
 	exit_group.empty()
 	text_trigger_group.empty()
 
-	#load in level data and create world
-	if path.exists(f'level{level}_data'):
-		pickle_in = open(f'level{level}_data', 'rb')
-		world_data = pickle.load(pickle_in)
+	world_data = load_level_data(level)
 	world = World(world_data)
+
 	#create dummy coin for showing the score
 	score_coin = Coin(tile_size // 2, tile_size // 2)
 	coin_group.add(score_coin)
@@ -432,27 +447,22 @@ class TextTrigger(pygame.sprite.Sprite):
         3: [
             "These platforms move!",
             "Watch your step!",
-            "Time your jumps carefully"
         ],
         4: [
             "Watch out for the enemies!",
-            "They may look cute",
-            "But they're dangerous!"
+            "They may look cute, but they're dangerous!",
         ],
         5: [
             "The exit is up ahead",
             "Can you make it there?",
-            "Don't give up!"
         ],
         6: [
             "You're almost there!",
             "Just a bit further",
-            "You can do it!"
         ],
         7: [
             "This is a tricky one!",
 			"Be careful!",
-			"Timing is key!"
         ],
         8: [
             "Final level!",
@@ -489,15 +499,20 @@ class TextTrigger(pygame.sprite.Sprite):
 
     def draw(self, screen):
         if self.active:
-            # Calculate position based on grid coordinates
-            # Use grid positions to create a grid layout for messages
-            # This ensures messages are spaced out across the screen
-            grid_spacing_x = screen_width // 4  # Divide screen into 4 columns
-            grid_spacing_y = screen_height // 4  # Divide screen into 4 rows
+            # Get all active triggers and sort them by creation order
+            active_triggers = [t for t in text_trigger_group if t.active]
+            # Find our position in the active triggers list
+            try:
+                message_position = active_triggers.index(self)
+            except ValueError:
+                message_position = 0
             
-            # Calculate position based on grid coordinates
-            x_pos = (self.grid_x % 4) * grid_spacing_x + grid_spacing_x // 2
-            y_pos = (self.grid_y % 4) * (grid_spacing_y // 2) + 50  # Start from top with some padding
+            # Fixed x position in the middle of the screen
+            x_pos = screen_width // 2
+            # Stack messages vertically from top, with padding
+            padding = 40  # Space between messages
+            base_y = 50   # Starting Y position from top
+            y_pos = base_y + (message_position * padding)
             
             # Render the text
             text_surf = font_score.render(self.message, True, white)
@@ -514,9 +529,16 @@ score_coin = Coin(tile_size // 2, tile_size // 2)
 coin_group.add(score_coin)
 
 #load in level data and create world
-if path.exists(f'level{level}_data'):
-	pickle_in = open(f'level{level}_data', 'rb')
-	world_data = pickle.load(pickle_in)
+try:
+    bundle_dir = getattr(sys, '_MEIPASS', path.abspath(path.dirname(__file__)))
+    level_path = path.abspath(path.join(bundle_dir, '..', f'level{level}_data'))
+    if not path.exists(level_path):
+        level_path = path.join(bundle_dir, f'level{level}_data')
+    if path.exists(level_path):
+        with open(level_path, 'rb') as pickle_in:
+            world_data = pickle.load(pickle_in)
+except Exception as e:
+    print(f"Error loading level: {e}")
 world = World(world_data)
 
 
