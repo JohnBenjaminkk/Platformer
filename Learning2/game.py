@@ -32,8 +32,8 @@ font_score = pygame.font.SysFont('Bauhaus 93', 30)
 tile_size = 50
 game_over = 0
 main_menu = True
-level = 1
-max_levels = 8
+level = 10
+max_levels = 10
 score = 0
 
 
@@ -90,6 +90,7 @@ def reset_level(level):
 	lava_group.empty()
 	exit_group.empty()
 	text_trigger_group.empty()
+	win_group.empty()
 
 	world_data = load_level_data(level)
 	world = World(world_data)
@@ -143,21 +144,21 @@ class Player():
 		if game_over == 0:
 			#get keypresses
 			key = pygame.key.get_pressed()
-			if key[pygame.K_UP] and self.jumped == False and self.in_air == False:
+			if key[pygame.K_SPACE] and self.jumped == False and self.in_air == False:
 				jump_fx.play()
 				self.vel_y = -15
 				self.jumped = True
 			if key[pygame.K_SPACE] == False:
 				self.jumped = False
-			if key[pygame.K_LEFT]:
+			if key[pygame.K_a]:
 				dx -= 5
 				self.counter += 1
 				self.direction = -1
-			if key[pygame.K_RIGHT]:
+			if key[pygame.K_d]:
 				dx += 5
 				self.counter += 1
 				self.direction = 1
-			if key[pygame.K_LEFT] == False and key[pygame.K_RIGHT] == False:
+			if key[pygame.K_a] == False and key[pygame.K_d] == False:
 				self.counter = 0
 				self.index = 0
 				if self.direction == 1:
@@ -216,6 +217,11 @@ class Player():
 			#check for collision with exit
 			if pygame.sprite.spritecollide(self, exit_group, False):
 				game_over = 1
+				
+			#check for collision with win sprite on the last level
+			if level == max_levels and pygame.sprite.spritecollide(self, win_group, False):
+				game_over = 2  # Special win condition
+				draw_text('CONGRATULATIONS, YOU WIN!', font, blue, (screen_width // 2), screen_height // 2)
 
 
 			#check for collision with platforms
@@ -288,6 +294,7 @@ lava_group = pygame.sprite.Group()
 coin_group = pygame.sprite.Group()
 exit_group = pygame.sprite.Group()
 text_trigger_group = pygame.sprite.Group()
+win_group = pygame.sprite.Group()  # Add win group
 
 # Define trigger messages dictionary
 trigger_messages = {
@@ -321,34 +328,37 @@ class World():
 					img_rect.y = row_count * tile_size
 					tile = (img, img_rect)
 					self.tile_list.append(tile)
-				if tile == 2:
+				elif tile == 2:
 					img = pygame.transform.scale(grass_img, (tile_size, tile_size))
 					img_rect = img.get_rect()
 					img_rect.x = col_count * tile_size
 					img_rect.y = row_count * tile_size
 					tile = (img, img_rect)
 					self.tile_list.append(tile)
-				if tile == 3:
+				elif tile == 3:
 					blob = Enemy(col_count * tile_size, row_count * tile_size + 15)
 					blob_group.add(blob)
-				if tile == 4:
+				elif tile == 4:
 					platform = Platform(col_count * tile_size, row_count * tile_size, 1, 0)
 					platform_group.add(platform)
-				if tile == 5:
+				elif tile == 5:
 					platform = Platform(col_count * tile_size, row_count * tile_size, 0, 1)
 					platform_group.add(platform)
-				if tile == 6:
+				elif tile == 6:
 					lava = Lava(col_count * tile_size, row_count * tile_size + (tile_size // 2))
 					lava_group.add(lava)
-				if tile == 7:
+				elif tile == 7:
 					coin = Coin(col_count * tile_size + (tile_size // 2), row_count * tile_size + (tile_size // 2))
 					coin_group.add(coin)
-				if tile == 8:
+				elif tile == 8:
 					exit = Exit(col_count * tile_size, row_count * tile_size - (tile_size // 2))
 					exit_group.add(exit)
-				if tile == 9:
+				elif tile == 9:
 					trigger = TextTrigger(col_count * tile_size, row_count * tile_size)
 					text_trigger_group.add(trigger)
+				elif tile == 10:
+					win = Win(col_count * tile_size, row_count * tile_size)
+					win_group.add(win)
 				col_count += 1
 			row_count += 1
 
@@ -401,8 +411,15 @@ class Platform(pygame.sprite.Sprite):
 
 
 
-
-
+class Win(pygame.sprite.Sprite):
+	def __init__(self, x, y):
+		pygame.sprite.Sprite.__init__(self)
+		img = pygame.image.load(path.join(img_dir, 'win.png'))
+		self.image = pygame.transform.scale(img, (tile_size * 3, tile_size * 4))
+		self.rect = self.image.get_rect()
+		self.rect.x = x - tile_size  # Offset to center
+		self.rect.y = y - tile_size * 2  # Offset upward to match editor placement
+		
 class Lava(pygame.sprite.Sprite):
 	def __init__(self, x, y):
 		pygame.sprite.Sprite.__init__(self)
@@ -431,43 +448,45 @@ class Exit(pygame.sprite.Sprite):
 		self.rect.x = x
 		self.rect.y = y
 
+# Removing duplicate Win class definition
+
 
 class TextTrigger(pygame.sprite.Sprite):
     # Messages organized by level
     level_messages = {
         1: [
             "Welcome to the game!",
-            "Use arrow keys to move",
-            "Press UP to jump"
+            "Use WASD to move",
+            "Press SPACE to jump"
         ],
         2: [
-            "Watch out for the lava!",
-            "Try not to fall in"
+            "Watch out for the lava!"
         ],
         3: [
             "These platforms move!",
-            "Watch your step!",
         ],
         4: [
-            "Watch out for the enemies!",
-            "They may look cute, but they're dangerous!",
+            "Watch out for the enemies!, They may look cute, but they're dangerous!",
         ],
         5: [
-            "The exit is up ahead",
-            "Can you make it there?",
+            "The exit is juts up ahead",
         ],
         6: [
             "You're almost there!",
-            "Just a bit further",
         ],
         7: [
             "This is a tricky one!",
-			"Be careful!",
         ],
         8: [
-            "Final level!",
-            "This is the hardest one",
-        ]
+            "I hope you're having fun so far!",
+        ],
+		9: [
+			"You're doing great!",
+		],
+		10: [
+			"Time your jumps carefully!",
+			"theres nothing here, why would you go here?",
+		]
     }
 
     def __init__(self, x, y):
@@ -484,7 +503,7 @@ class TextTrigger(pygame.sprite.Sprite):
         self.message = level_specific_messages[min(message_index, len(level_specific_messages) - 1)]
         self.active = False
         self.display_time = 0
-        self.display_duration = 1500  # Display text for 3 seconds
+        self.display_duration = 3500 
 
     def update(self):
         if self.active:
@@ -506,16 +525,15 @@ class TextTrigger(pygame.sprite.Sprite):
                 message_position = active_triggers.index(self)
             except ValueError:
                 message_position = 0
-            
-            # Fixed x position in the middle of the screen
+              # Fixed x position in the middle of the screen
             x_pos = screen_width // 2
-            # Stack messages vertically from top, with padding
+            # Stack messages vertically in the center of the screen
             padding = 40  # Space between messages
-            base_y = 50   # Starting Y position from top
+            base_y = screen_height // 2 - 100  # Starting Y position from center
             y_pos = base_y + (message_position * padding)
             
             # Render the text
-            text_surf = font_score.render(self.message, True, white)
+            text_surf = font_score.render(self.message, True, blue)  # Changed color to blue
             text_rect = text_surf.get_rect(center=(x_pos, y_pos))
             screen.blit(text_surf, text_rect)
 
@@ -572,12 +590,12 @@ while run:
 				score += 1
 				coin_fx.play()
 			draw_text('X ' + str(score), font_score, white, tile_size - 10, 10)
-		
-		blob_group.draw(screen)
+			blob_group.draw(screen)
 		platform_group.draw(screen)
 		lava_group.draw(screen)
 		coin_group.draw(screen)
 		exit_group.draw(screen)
+		win_group.draw(screen)  # Add win sprite group to be drawn
 
 		# Update and draw text triggers
 		text_trigger_group.update()

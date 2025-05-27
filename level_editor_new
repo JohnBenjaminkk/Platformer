@@ -36,6 +36,7 @@ platform_y_img = pygame.image.load(path.join(img_dir, 'platform_y.png'))
 lava_img = pygame.image.load(path.join(img_dir, 'lava.png'))
 coin_img = pygame.image.load(path.join(img_dir, 'coin.png'))
 exit_img = pygame.image.load(path.join(img_dir, 'exit.png'))
+win_img = pygame.image.load(path.join(img_dir, 'win.png'))
 save_img = pygame.image.load(path.join(img_dir, 'save_btn.png'))
 load_img = pygame.image.load(path.join(img_dir, 'load_btn.png'))
 text_trigger_img = pygame.Surface((tile_size, tile_size))  # Create transparent surface
@@ -87,38 +88,43 @@ def draw_world():
                     #dirt blocks
                     img = pygame.transform.scale(dirt_img, (tile_size, tile_size))
                     screen.blit(img, (col * tile_size, row * tile_size))
-                if world_data[row][col] == 2:
+                elif world_data[row][col] == 2:
                     #grass blocks
                     img = pygame.transform.scale(grass_img, (tile_size, tile_size))
                     screen.blit(img, (col * tile_size, row * tile_size))
-                if world_data[row][col] == 3:
+                elif world_data[row][col] == 3:
                     #enemy blocks
                     img = pygame.transform.scale(blob_img, (tile_size, int(tile_size * 0.75)))
                     screen.blit(img, (col * tile_size, row * tile_size + (tile_size * 0.25)))
-                if world_data[row][col] == 4:
+                elif world_data[row][col] == 4:
                     #horizontally moving platform
                     img = pygame.transform.scale(platform_x_img, (tile_size, tile_size // 2))
                     screen.blit(img, (col * tile_size, row * tile_size))
-                if world_data[row][col] == 5:
+                elif world_data[row][col] == 5:
                     #vertically moving platform
                     img = pygame.transform.scale(platform_y_img, (tile_size, tile_size // 2))
                     screen.blit(img, (col * tile_size, row * tile_size))
-                if world_data[row][col] == 6:
+                elif world_data[row][col] == 6:
                     #lava
                     img = pygame.transform.scale(lava_img, (tile_size, tile_size // 2))
                     screen.blit(img, (col * tile_size, row * tile_size + (tile_size // 2)))
-                if world_data[row][col] == 7:
+                elif world_data[row][col] == 7:
                     #coin
                     img = pygame.transform.scale(coin_img, (tile_size // 2, tile_size // 2))
                     screen.blit(img, (col * tile_size + (tile_size // 4), row * tile_size + (tile_size // 4)))
-                if world_data[row][col] == 8:
+                elif world_data[row][col] == 8:
                     #exit
                     img = pygame.transform.scale(exit_img, (tile_size, int(tile_size * 1.5)))
-                    screen.blit(img, (col * tile_size, row * tile_size - (tile_size // 2)))
-                if world_data[row][col] == 9:
+                    screen.blit(img, (col * tile_size, row * tile_size - (tile_size // 2)))                  
+                elif world_data[row][col] == 9:
                     #text trigger zone
                     img = text_trigger_img.copy()
-                    screen.blit(img, (col * tile_size, row * tile_size))
+                    screen.blit(img, (col * tile_size, row * tile_size))                
+                elif world_data[row][col] == 10:
+                    #win sprite - large size
+                    img = pygame.transform.scale(win_img, (tile_size * 3, tile_size * 4))
+                    # Position centered on the click point, offset to account for larger size
+                    screen.blit(img, (col * tile_size - tile_size, row * tile_size - tile_size * 2))
 
 
 
@@ -202,12 +208,12 @@ while run:
                 #update tile value
                 if pygame.mouse.get_pressed()[0] == 1:
                     world_data[y][x] += 1
-                    if world_data[y][x] > 9:
+                    if world_data[y][x] > 10:
                         world_data[y][x] = 0
                 elif pygame.mouse.get_pressed()[2] == 1:
                     world_data[y][x] -= 1
                     if world_data[y][x] < 0:
-                        world_data[y][x] = 9
+                        world_data[y][x] = 10
         if event.type == pygame.MOUSEBUTTONUP:
             clicked = False
         #up and down key presses to change level number
